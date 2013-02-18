@@ -1,22 +1,26 @@
+package com.gu.idstore
+
+import com.google.inject.Inject
+import com.gu.idstore.DataStore.DataStoreService
 import net.liftweb.json.JsonAST.{JArray, JObject, JValue}
 
-class JsonStore {
+class JsonStore @Inject()(dataStore: DataStoreService) {
   def storeJson(collectionName:String, id:String, json: JValue) = {
-    //datastore.store(collectionName, id, convertJValueDotNotatedKeyValues(json))
+    dataStore.save(collectionName, id, convertJValueDotNotatedKeyValues(json))
   }
 
-  private def convertJValueDotNotatedKeyValues(jValue: JValue, rootPath: String = ""): Seq[(String, Any)] = {
+  private def convertJValueDotNotatedKeyValues(jValue: JValue, rootPath: String = ""): List[(String, Any)] = {
     jValue match {
       case jObject: JObject =>
-        jObject.obj.flatMap { jField =>
+        jObject.obj.map{ jField =>
           convertJValueDotNotatedKeyValues(jField.value, "%s%s.".format(rootPath, jField.name))
-        }
+        }.flatten
       case jArray: JArray =>
         jArray.arr.zipWithIndex.flatMap { elementWithIndex =>
           convertJValueDotNotatedKeyValues(elementWithIndex._1, "%s[%d].".format(rootPath, elementWithIndex._2))
         }
       case primitive =>
-        Seq((rootPath, primitive.values))
+        List((rootPath, primitive.values))
     }
   }
 }
