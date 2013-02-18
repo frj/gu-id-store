@@ -4,6 +4,10 @@ version := "1.0"
 
 scalaVersion := "2.10.0"
 
-libraryDependencies += "org.eclipse.jetty" % "jetty-webapp" % "7.6.8.v20121106" % "container"
+libraryDependencies ++= Seq(
+    "com.google.inject.extensions" % "guice-servlet" % "3.0",
+    "org.eclipse.jetty" % "jetty-webapp" % "7.6.8.v20121106" % "container",
+    "javax.servlet" % "servlet-api" % "2.5" % "provided"
+)
 
 appengineSettings
