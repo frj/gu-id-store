@@ -75,13 +75,13 @@ class Datastore @Inject()(datastoreProvider: DatastoreProvider) {
     }
   }
 
-  def find(collectionName: String, filters: Seq[FilterPredicate]): List[Entity] = {
+  def find(collectionName: String, filters: List[FilterPredicate]): List[Entity] = {
     getCollection(collectionName) match {
       case None => Nil
       case Some(collection) => {
         val query = new Query(dataKind, collection.getKey)
         filters match {
-          case Nil => query
+          case Nil => query  // TODO fail without a filter?
           case head :: Nil => query.setFilter(head)
           case xs => query.setFilter(CompositeFilterOperator.and(xs))
         }
