@@ -1,6 +1,9 @@
 package com.gu.idstore.DataStore
 
 import com.google.appengine.api.datastore._
+import com.google.appengine.api.datastore.Query.{FilterPredicate, CompositeFilterOperator}
+import scala.collection.JavaConversions._
+import scala.Some
 
 
 class DataStoreService {
@@ -10,26 +13,17 @@ class DataStoreService {
   val collectionKind = "collection"
   val dataKind = "userData"
 
-  private def runInTransaction(code: (Transaction) => Any) = {
-    val txn = datastore.beginTransaction()
+  private def getCollection(collectionName: String, txn: Transaction = null): Option[Entity] = {
     try {
-      code(txn)
-    } finally {
-      if (txn.isActive) txn.rollback()
-    }
-  }
-
-  private def getCollection(collectionName: String): Option[Entity] = {
-    try {
-      Some(datastore.get(new Key(collectionKind, collectionName)))
+      Some(datastore.get(txn, KeyFactory.createKey(collectionKind, collectionName)))
     } catch {
       case e: EntityNotFoundException => None
     }
   }
 
-  private def getOrCreateCollection(collectionName: String, txn: Transaction): Entity = {
-    getCollection(collectionName) match {
-      case Some(_) => _
+  private def getOrCreateCollection(collectionName: String, txn: Transaction = null): Entity = {
+    getCollection(collectionName, txn) match {
+      case Some(collection) => collection
       case None => {
         val collection = new Entity(collectionKind, collectionName)
         datastore.put(txn, collection)
@@ -38,9 +32,9 @@ class DataStoreService {
     }
   }
 
-  private def getEntity(collection: Entity, id: String): Either[Entity, Entity] = {
+  private def getEntity(collection: Entity, id: String, txn: Transaction = null): Either[Entity, Entity] = {
     try {
-      Right(datastore.get(new Key(dataKind, collection.getKey, id)))
+      Right(datastore.get(txn, KeyFactory.createKey(collection.getKey, dataKind, id)))
     } catch {
       case e: EntityNotFoundException => Left(new Entity(dataKind, id, collection.getKey))
     }
@@ -54,15 +48,20 @@ class DataStoreService {
   }
 
   def save(collectionName: String, id: String, data: KeyValuePair) = {
-    runInTransaction({(txn) =>
+    val txn = datastore.beginTransaction()
+    try {
       val collection = getOrCreateCollection(collectionName, txn)
       val entity = getEntity(collection, id) match {
-        case Left(_) => _
-        case Right(_) => _
+        case Left(entity) => entity
+        case Right(entity) => entity
       }
-      val data = mergeData(entity, data)
-      datastore.put(txn, data)
-    })
+      val mergedEntity = mergeData(entity, data)
+      datastore.put(txn, mergedEntity)
+
+      txn.commit()
+    } finally {
+      if (txn.isActive) txn.rollback()
+    }
   }
 
   def get(collectionName: String, id: String): Option[Entity] = {
@@ -72,6 +71,23 @@ class DataStoreService {
           case Left(_) => None
           case Right(entity) => Some(entity)
         }
+    }
+  }
+
+  def find(collectionName: String, filters: Seq[FilterPredicate]): List[Entity] = {
+    getCollection(collectionName) match {
+      case None => Nil
+      case Some(collection) => {
+        val query = new Query(dataKind, collection.getKey)
+        filters match {
+          case Nil => query
+          case head :: Nil => query.setFilter(head)
+          case xs => query.setFilter(CompositeFilterOperator.and(xs))
+        }
+        val prepared = datastore.prepare(query)
+        // TODO use asIterable to optimize large queries
+        prepared.asList(FetchOptions.Builder.withDefaults()).toList
+      }
     }
   }
 }
