@@ -1,5 +1,5 @@
 #!/bin/bash
 
-export APPENGINE_SDK_HOME=~/linux-dev/appengine-java-sdk
+export APPENGINE_SDK_HOME=~/bin/appengine-java-sdk-1.7.5
 
 sbt $*
