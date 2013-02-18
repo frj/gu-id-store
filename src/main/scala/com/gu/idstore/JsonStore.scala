@@ -1,10 +1,10 @@
 package com.gu.idstore
 
+import com.gu.idstore.datastore.Datastore
 import com.google.inject.Inject
-import com.gu.idstore.DataStore.DataStoreService
 import net.liftweb.json.JsonAST.{JArray, JObject, JValue}
 
-class JsonStore @Inject()(dataStore: DataStoreService) {
+class JsonStore @Inject()(dataStore: Datastore) {
   def storeJson(collectionName:String, id:String, json: JValue) = {
     dataStore.save(collectionName, id, convertJValueDotNotatedKeyValues(json))
   }
