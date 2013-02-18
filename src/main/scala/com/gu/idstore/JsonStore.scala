@@ -3,6 +3,7 @@ package com.gu.idstore
 import com.gu.idstore.datastore.Datastore
 import com.google.inject.Inject
 import net.liftweb.json.JsonAST.{JString, JArray, JObject, JValue}
+import net.liftweb.json.JsonDSL._
 
 class JsonStore @Inject()(dataStore: Datastore) {
 
@@ -11,6 +12,10 @@ class JsonStore @Inject()(dataStore: Datastore) {
     val json : List[(String, Any)] = Nil
     Some(JString("123123"))
     //convertDotNotatedKeyValuesToJValue(json)
+  }
+
+  def getPublicJson(s: String, s1: String): Option[JValue] = {
+    Option(getJson(s, s1) \ "public") // TODO: actually filter, rather than changing root
   }
 
   def storeJson(collectionName:String, id:String, json: JValue) = {
