@@ -2,9 +2,17 @@ package com.gu.idstore
 
 import com.gu.idstore.datastore.Datastore
 import com.google.inject.Inject
-import net.liftweb.json.JsonAST.{JArray, JObject, JValue}
+import net.liftweb.json.JsonAST.{JString, JArray, JObject, JValue}
 
 class JsonStore @Inject()(dataStore: Datastore) {
+
+
+  def getJson(s: String, s1: String): Option[JValue] = {
+    val json : List[(String, Any)] = Nil
+    Some(JString("123123"))
+    //convertDotNotatedKeyValuesToJValue(json)
+  }
+
   def storeJson(collectionName:String, id:String, json: JValue) = {
     dataStore.save(collectionName, id, convertJValueDotNotatedKeyValues(json))
   }
@@ -23,4 +31,11 @@ class JsonStore @Inject()(dataStore: Datastore) {
         List((rootPath, primitive.values))
     }
   }
+
+//  def convertDotNotatedKeyValuesToJValue(keyValues: List[(String, Any)]): JValue = {
+//    keyValues
+//      .map { keyValue => (keyValue._1.split('.'), keyValue._2)
+//
+//  }
+//
 }

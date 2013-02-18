@@ -7,7 +7,7 @@ class ContextListener extends GuiceServletContextListener {
   override def getInjector(): Injector = {
     Guice.createInjector(new ServletModule() {
         override def configureServlets() {
-          serve("/store/*").`with`(classOf[StoreServlet]);
+          filter("/store/*").through(classOf[StoreServlet]);
         }
     });
   }
