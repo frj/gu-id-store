@@ -8,7 +8,9 @@ import com.gu.idstore.datastore.Datastore
 class StoreServlet @Inject()(val datastore: Datastore) extends HttpServlet {
   override def service(req: HttpServletRequest, resp: HttpServletResponse) {
     resp.getWriter.print("hello")
-//    val data = List(("test", "data"), ("test2", 123))
-//    datastore.save("testCollection", "1234", data)
+    val data = List(("test2", 1234))
+    datastore.save("testCollection", "1234", data)
+    val record = datastore.get("testCollection", "1234")
+    println(record)
   }
 }
