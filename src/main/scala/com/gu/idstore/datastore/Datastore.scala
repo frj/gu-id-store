@@ -65,12 +65,12 @@ class Datastore @Inject()(datastoreProvider: DatastoreProvider) {
     }
   }
 
-  def get(collectionName: String, id: String): Option[Entity] = {
+  def get(collectionName: String, id: String): Option[List[(String, Any)]] = {
     getCollection(collectionName) match {
       case None => None
       case Some(collection) => getEntity(collection, id) match {
           case Left(_) => None
-          case Right(entity) => Some(entity)
+          case Right(entity) => Some(entity.getProperties.toList)
         }
     }
   }

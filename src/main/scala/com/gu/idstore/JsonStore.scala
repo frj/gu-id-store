@@ -2,16 +2,16 @@ package com.gu.idstore
 
 import com.gu.idstore.datastore.Datastore
 import com.google.inject.Inject
-import net.liftweb.json.JsonAST.{JString, JArray, JObject, JValue}
+import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonDSL._
+import net.liftweb.json.JsonAST.JObject
+import net.liftweb.json.JsonAST.JArray
+
 
 class JsonStore @Inject()(dataStore: Datastore) {
 
-
-  def getJson(s: String, s1: String): Option[JValue] = {
-    val json : List[(String, Any)] = Nil
-    Some(JString("123123"))
-    //convertDotNotatedKeyValuesToJValue(json)
+  def getJson(collectionName: String, entityId: String): Option[JValue] = {
+    dataStore.get(collectionName, entityId).map(convertDotNotatedKeyValuesToJValue(_))
   }
 
   def getPublicJson(s: String, s1: String): Option[JValue] = {
@@ -37,10 +37,27 @@ class JsonStore @Inject()(dataStore: Datastore) {
     }
   }
 
-//  def convertDotNotatedKeyValuesToJValue(keyValues: List[(String, Any)]): JValue = {
-//    keyValues
-//      .map { keyValue => (keyValue._1.split('.'), keyValue._2)
-//
-//  }
-//
+  def convertDotNotatedKeyValuesToJValue(keyValues: List[(String, Any)]): JValue = {
+    keyValues match {
+      case List(("", primitive)) => primitiveToJValue(primitive)
+      case objectFields =>
+        objectFields.groupBy(keyValue => keyValue._1.takeWhile(_ != '.'))
+          .foldLeft(JObject(Nil)) { (jObject, values) =>
+            jObject ~ (values._1 -> convertDotNotatedKeyValuesToJValue(
+              values._2.map(
+                subObjectKeyValues => (subObjectKeyValues._1.dropWhile(_ != '.').drop(1), subObjectKeyValues._2)
+              )
+            ))
+          }
+    }
+  }
+
+  def primitiveToJValue(primitive: Any): JValue = {
+    primitive match {
+      case integer: Integer => JInt(BigInt(integer))
+      case double: Double => JDouble(double)
+      case string: String => JString(string)
+      case boolean: Boolean => JBool(boolean)
+    }
+  }
 }
