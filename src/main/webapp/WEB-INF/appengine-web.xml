@@ -3,4 +3,5 @@
     <application>gu-id-store</application>
     <version>1</version>
     <threadsafe>true</threadsafe>
+    <precompilation-enabled>false</precompilation-enabled>
 </appengine-web-app>
