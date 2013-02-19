@@ -1,12 +1,11 @@
 package com.gu.idstore.guice
 
-import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
+import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import com.google.inject.{Inject, Singleton}
 import com.gu.idstore.{Authentication, JsonStore}
 import javax.servlet._
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
-import com.gu.identity.model.User
 
 @Singleton
 class StoreServlet @Inject()(jsonStore: JsonStore,
@@ -22,9 +21,10 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
     val servletResponse = response.asInstanceOf[HttpServletResponse]
     val path = Option(servletRequest.getServletPath).getOrElse("") + Option(servletRequest.getPathInfo).getOrElse("")
 
-    ((path, servletRequest.getMethod) match {
-      case (pathWithIdRegexp(collectionName, entityId), "POST") => saveData(servletRequest, collectionName, entityId)
-      case (pathWithIdRegexp(collectionName, entityId), "GET") => getData(servletRequest, collectionName, entityId)
+    ((path, servletRequest.getMethod, Option(servletRequest.getParameter("method"))) match {
+      case (pathWithIdRegexp(collectionName, entityId), "POST", _) => saveData(servletRequest, collectionName, entityId)
+      case (pathWithIdRegexp(collectionName, entityId), _, Some("POST")) => saveData(servletRequest, collectionName, entityId)
+      case (pathWithIdRegexp(collectionName, entityId), "GET", _) => getData(servletRequest, collectionName, entityId)
       case _ =>
         chain.doFilter(servletRequest, servletResponse)
         None
@@ -37,9 +37,17 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
 
   private def saveData(request: HttpServletRequest, collectionName: String, entityId: String): Option[JValue] = {
     authentication.authenticateEntityAccess(request, entityId) match {
-      case Right(_) => JsonParser.parseOpt(request.getReader).map { json =>
-        jsonStore.storeJson(collectionName, entityId, json)
-        pair2jvalue("status" -> "OK")
+      case Right(_) => {
+        ({
+          if (request.getParameter("method") == "POST") Option(request.getParameter("body")) match {
+            case None => throw new Exception("No request body provided")
+            case Some(body) => JsonParser.parseOpt(body)
+          }
+          else JsonParser.parseOpt(request.getReader)
+        }).map { json =>
+          jsonStore.storeJson(collectionName, entityId, json)
+          pair2jvalue("status" -> "OK")
+        }
       }
       // TODO: handle different auth failures (wrong/missing) differently?
       case Left(_) => Some(pair2jvalue("status" -> "FORBIDDEN"))
