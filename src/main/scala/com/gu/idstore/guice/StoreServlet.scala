@@ -33,7 +33,17 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
     }).foreach { jValue =>
       response.setCharacterEncoding("UTF-8")
       response.setContentType("application/json")
-      response.getWriter.append(pretty(render(jValue)))
+      val responseBody = params.getParam("callback") match {
+        case None => {
+          response.setContentType("application/json")
+          pretty(render(jValue))
+        }
+        case Some(callback) => {
+          response.setContentType("application/javascript")
+          callback.value + "(" + compact(render(jValue)) + ")"
+        }
+      }
+      response.getWriter.append(responseBody)
     }
   }
 
