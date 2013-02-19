@@ -15,7 +15,13 @@ class JsonStore @Inject()(dataStore: Datastore) {
   }
 
   def getPublicJson(s: String, s1: String): Option[JValue] = {
-    Option(getJson(s, s1) \ "public") // TODO: actually filter, rather than changing root
+    getJson(s, s1).map {
+      _ match {
+        case jObject:JObject =>
+          pair2jvalue("public" -> jObject \ "public")
+        case _ => JNothing
+      }
+    }
   }
 
   def storeJson(collectionName:String, id:String, json: JValue) = {

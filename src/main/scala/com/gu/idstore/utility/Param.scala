@@ -10,16 +10,11 @@ case class Params(params: List[Param]) {
   def getParams(name: String): List[Param] = params.filter(_.name == name)
 }
 object Params {
-  def apply(maybeQueryString: String): Params = {
-    Option(maybeQueryString) match {
-      case None => Params(Nil)
-      case Some(queryString) => {
-        Params(queryString.split("&").filter(param => param.contains("=")).map((param: String) => {
-          var split = param.split("=")
-          Param(URLDecoder.decode(split(0), "UTF-8"), URLDecoder.decode(split(1), "UTF-8"))
-        }).toList)
-      }
-    }
+  def apply(queryString: String): Params = {
+    Params(Option(queryString).map( _.split("&").filter(param => param.contains("=")).map((param: String) => {
+      var split = param.split("=")
+      Param(URLDecoder.decode(split(0), "UTF-8"), URLDecoder.decode(split(1), "UTF-8"))
+    }).toList).getOrElse(Nil))
   }
 
   def apply(request: HttpServletRequest): Params = Params(request.getQueryString)
