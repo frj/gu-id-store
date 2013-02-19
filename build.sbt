@@ -15,3 +15,7 @@ libraryDependencies ++= Seq(
 )
 
 appengineSettings
+
+resolvers ++= Seq(
+  "Guardian Nexus Releases" at "http://nexus.gudev.gnl:8081/nexus/content/repositories/releases"
+)

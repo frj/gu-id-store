@@ -3,6 +3,7 @@ package com.gu.idstore
 import javax.servlet.http.HttpServletRequest
 import com.gu.identity.model.User
 import com.google.inject.Inject
+import java.net.URLDecoder
 
 
 class Authentication @Inject()(identityApiClientProvider: IdentityApiClientProvider) {
@@ -10,10 +11,12 @@ class Authentication @Inject()(identityApiClientProvider: IdentityApiClientProvi
 
   // TODO: add access token support
   def authenticate(request: HttpServletRequest): Option[User] = {
-    (Option(request.getParameter("GU_U")) match {
+    val queryStringParameters = Option(request.getQueryString).map(_.split('&').map(_.split('=').map(URLDecoder.decode(_, "UTF-8"))).map(element => (element(0) -> element(1))).toMap).getOrElse(Map())
+
+    (queryStringParameters.get("GU_U") match {
       case Some(param) => Option(param)
       case None => {
-        request.getCookies.toList.filter(_.getName == "GU_U") match {
+        Option(request.getCookies).flatten.toList.filter(_.getName == "GU_U") match {
           case Nil => None
           case head :: _ => Option(head.getValue)
         }
