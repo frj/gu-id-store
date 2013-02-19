@@ -27,6 +27,7 @@ class Authentication @Inject()(identityApiClientProvider: IdentityApiClientProvi
 
   def authenticateEntityAccess(request: HttpServletRequest, entityId: String): Either[Option[User], User] = {
     authenticate(request) match {
+      case Some(user) if "me" == entityId => Right(user)
       case Some(user) if user.getId() == entityId => Right(user)
       case Some(user) => Left(Some(user))
       case _ => Left(None)

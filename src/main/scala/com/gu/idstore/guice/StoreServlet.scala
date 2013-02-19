@@ -40,7 +40,7 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
   private def saveData(request: HttpServletRequest, collectionName: String, entityId: String): Option[JValue] = {
     val params = Params(request)
     authentication.authenticateEntityAccess(request, entityId) match {
-      case Right(_) => {
+      case Right(user) => {
         ({
           params.getParam("method") match {
             case Some(Param(_, "POST")) => {
@@ -53,7 +53,7 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
             case _ => throw new Exception("Unsupported method")
           }
         }).map { json =>
-          jsonStore.storeJson(collectionName, entityId, json)
+          jsonStore.storeJson(collectionName, user.getId(), json)
           pair2jvalue("status" -> "OK")
         }
       }
@@ -64,7 +64,7 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
 
   private def getData(request: HttpServletRequest, collectionName: String, entityId: String): Option[JValue] = {
     authentication.authenticateEntityAccess(request, entityId) match {
-      case Right(_) => jsonStore.getJson(collectionName, entityId)
+      case Right(user) => jsonStore.getJson(collectionName, user.getId())
       // TODO: handle different auth failures (wrong/missing) differently?
       case Left(_) => jsonStore.getPublicJson(collectionName, entityId)
     }
