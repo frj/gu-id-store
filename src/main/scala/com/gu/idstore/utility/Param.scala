@@ -11,10 +11,10 @@ case class Params(params: List[Param]) {
 }
 object Params {
   def apply(queryString: String): Params = {
-    Params(queryString.split("&").filter(param => param.contains("=")).map((param: String) => {
+    Params(Option(queryString).map( _.split("&").filter(param => param.contains("=")).map((param: String) => {
       var split = param.split("=")
       Param(URLDecoder.decode(split(0), "UTF-8"), URLDecoder.decode(split(1), "UTF-8"))
-    }).toList)
+    }).toList).getOrElse(Nil))
   }
 
   def apply(request: HttpServletRequest): Params = Params(request.getQueryString)
