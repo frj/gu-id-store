@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest
 import com.gu.identity.model.User
 import com.google.inject.Inject
 import java.net.URLDecoder
+import utility.Params
 
 
 class Authentication @Inject()(identityApiClientProvider: IdentityApiClientProvider) {
@@ -11,10 +12,8 @@ class Authentication @Inject()(identityApiClientProvider: IdentityApiClientProvi
 
   // TODO: add access token support
   def authenticate(request: HttpServletRequest): Option[User] = {
-    val queryStringParameters = Option(request.getQueryString).map(_.split('&').map(_.split('=').map(URLDecoder.decode(_, "UTF-8"))).map(element => (element(0) -> element(1))).toMap).getOrElse(Map())
-
-    (queryStringParameters.get("GU_U") match {
-      case Some(param) => Option(param)
+    (Params(request).getParam("GU_U") match {
+      case Some(param) => Option(param.value)
       case None => {
         Option(request.getCookies).flatten.toList.filter(_.getName == "GU_U") match {
           case Nil => None

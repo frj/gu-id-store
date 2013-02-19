@@ -6,6 +6,7 @@ import com.gu.idstore.{Authentication, JsonStore}
 import javax.servlet._
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
+import com.gu.idstore.utility.{Param, Params}
 
 @Singleton
 class StoreServlet @Inject()(jsonStore: JsonStore,
@@ -20,10 +21,11 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
     val servletRequest = request.asInstanceOf[HttpServletRequest]
     val servletResponse = response.asInstanceOf[HttpServletResponse]
     val path = Option(servletRequest.getServletPath).getOrElse("") + Option(servletRequest.getPathInfo).getOrElse("")
+    val params = Params(servletRequest)
 
-    ((path, servletRequest.getMethod, Option(servletRequest.getParameter("method"))) match {
+    ((path, servletRequest.getMethod, params.getParam("method")) match {
       case (pathWithIdRegexp(collectionName, entityId), "POST", _) => saveData(servletRequest, collectionName, entityId)
-      case (pathWithIdRegexp(collectionName, entityId), _, Some("POST")) => saveData(servletRequest, collectionName, entityId)
+      case (pathWithIdRegexp(collectionName, entityId), _, Some(Param("method", "POST"))) => saveData(servletRequest, collectionName, entityId)
       case (pathWithIdRegexp(collectionName, entityId), "GET", _) => getData(servletRequest, collectionName, entityId)
       case _ =>
         chain.doFilter(servletRequest, servletResponse)
@@ -36,14 +38,20 @@ class StoreServlet @Inject()(jsonStore: JsonStore,
   }
 
   private def saveData(request: HttpServletRequest, collectionName: String, entityId: String): Option[JValue] = {
+    val params = Params(request)
     authentication.authenticateEntityAccess(request, entityId) match {
       case Right(_) => {
         ({
-          if (request.getParameter("method") == "POST") Option(request.getParameter("body")) match {
-            case None => throw new Exception("No request body provided")
-            case Some(body) => JsonParser.parseOpt(body)
+          params.getParam("method") match {
+            case Some(Param(_, "POST")) => {
+              params.getParam("body") match {
+                case None => throw new Exception("Missing required param, body")
+                case Some(Param(_, body)) => JsonParser.parseOpt(body)
+              }
+            }
+            case None => JsonParser.parseOpt(request.getReader)
+            case _ => throw new Exception("Unsupported method")
           }
-          else JsonParser.parseOpt(request.getReader)
         }).map { json =>
           jsonStore.storeJson(collectionName, entityId, json)
           pair2jvalue("status" -> "OK")
