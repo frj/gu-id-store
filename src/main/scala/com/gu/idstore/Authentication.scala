@@ -20,9 +20,12 @@ class Authentication @Inject()(identityApiClientProvider: IdentityApiClientProvi
           case head :: _ => Option(head.getValue)
         }
       }
-    }).map(guU => {
-      identityApiClient.extractUserDataFromGuUCookie(guU)
-    })
+    }) match {
+      case None => None
+      case Some(guU) => {
+        Option(identityApiClient.extractUserDataFromGuUCookie(guU))
+      }
+    }
   }
 
   def authenticateEntityAccess(request: HttpServletRequest, entityId: String): Either[Option[User], User] = {
